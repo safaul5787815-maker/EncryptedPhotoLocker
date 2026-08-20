@@ -122,51 +122,86 @@ public class MainActivity extends Activity {
     // =================================================
     // SAVE FILE TO DOWNLOAD
     // =================================================
+public void saveToDownloads(
+        byte[] data,
+        String fileName) {
 
-    public void saveToDownloads(
-            byte[] data,
-            String fileName) {
+    try {
 
-        try {
+        android.content.ContentValues values =
+                new android.content.ContentValues();
 
-            File downloads =
-                    Environment.getExternalStoragePublicDirectory(
-                            Environment.DIRECTORY_DOWNLOADS
-                    );
+        values.put(
+                android.provider.MediaStore.Downloads.DISPLAY_NAME,
+                fileName
+        );
 
-            if (!downloads.exists()) {
-                downloads.mkdirs();
-            }
+        values.put(
+                android.provider.MediaStore.Downloads.MIME_TYPE,
+                "application/octet-stream"
+        );
 
-            File file =
-                    new File(
-                            downloads,
-                            fileName
-                    );
+        values.put(
+                android.provider.MediaStore.Downloads.RELATIVE_PATH,
+                android.os.Environment.DIRECTORY_DOWNLOADS
+        );
 
-            FileOutputStream output =
-                    new FileOutputStream(file);
+        values.put(
+                android.provider.MediaStore.Downloads.IS_PENDING,
+                1
+        );
 
-            output.write(data);
+        android.net.Uri uri =
+                getContentResolver().insert(
+                        android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                        values
+                );
 
-            output.flush();
-            output.close();
-
-            Toast.makeText(
-                    this,
-                    "Saved in Downloads",
-                    Toast.LENGTH_LONG
-            ).show();
-
-        } catch (Exception e) {
-
-            Toast.makeText(
-                    this,
-                    "Save failed: " + e.getMessage(),
-                    Toast.LENGTH_LONG
-            ).show();
+        if (uri == null) {
+            throw new Exception("Could not create file");
         }
+
+        java.io.OutputStream output =
+                getContentResolver().openOutputStream(uri);
+
+        if (output == null) {
+            throw new Exception("Could not open file");
+        }
+
+        output.write(data);
+        output.flush();
+        output.close();
+
+        android.content.ContentValues complete =
+                new android.content.ContentValues();
+
+        complete.put(
+                android.provider.MediaStore.Downloads.IS_PENDING,
+                0
+        );
+
+        getContentResolver().update(
+                uri,
+                complete,
+                null,
+                null
+        );
+
+        Toast.makeText(
+                this,
+                "Saved in Downloads: " + fileName,
+                Toast.LENGTH_LONG
+        ).show();
+
+    } catch (Exception e) {
+
+        Toast.makeText(
+                this,
+                "Save failed: " + e.getMessage(),
+                Toast.LENGTH_LONG
+        ).show();
     }
+}
 
     @Override
     public void onBackPressed() {
