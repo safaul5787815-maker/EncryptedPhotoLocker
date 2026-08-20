@@ -1,0 +1,28 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.safaul.encryptedphotolocker.app-debug-4:/values_values.arsc.flat",
+            "map": [
+                {
+                    "source": "/data/data/com.termux/files/home/Projects/EncryptedPhotoLocker/app/src/main/res/values/styles.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "4",
+                        "startOffsets": "57",
+                        "endLines": "10",
+                        "endColumns": "12",
+                        "endOffsets": "444"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "8",
+                        "endColumns": "12",
+                        "endOffsets": "442"
+                    }
+                }
+            ]
+        }
+    ]
+}

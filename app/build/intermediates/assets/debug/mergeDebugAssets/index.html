@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Encryptor</title>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#f3f6fa;
+}
+
+.header{
+    background:#1976d2;
+    color:white;
+    padding:18px;
+    text-align:center;
+}
+
+.header h1{
+    margin:0;
+    font-size:22px;
+}
+
+.container{
+    max-width:500px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:16px;
+    margin-bottom:20px;
+    box-shadow:0 4px 15px rgba(0,0,0,.1);
+}
+
+h2{
+    margin-top:0;
+}
+
+input[type="file"],
+input[type="password"]{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border:1px solid #ddd;
+    border-radius:9px;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    margin-top:10px;
+    border:0;
+    border-radius:9px;
+    background:#1976d2;
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+}
+
+button:active{
+    transform:scale(.98);
+}
+
+.status{
+    margin-top:15px;
+    padding:12px;
+    background:#f1f5f9;
+    border-radius:9px;
+    text-align:center;
+}
+
+.success{
+    color:green;
+}
+
+.error{
+    color:red;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>🔐 Photo Encryptor</h1>
+</div>
+
+<div class="container">
+
+    <!-- ENCRYPT -->
+
+    <div class="card">
+
+        <h2>📷 Photo → Encrypted File</h2>
+
+        <input
+            type="file"
+            id="photoInput"
+            accept="image/*"
+        >
+
+        <input
+            type="password"
+            id="encryptPassword"
+            placeholder="Enter password"
+        >
+
+        <button onclick="encryptPhoto()">
+            🔐 Encrypt Photo
+        </button>
+
+        <div id="encryptStatus" class="status">
+            Select a photo
+        </div>
+
+    </div>
+
+
+    <!-- DECRYPT -->
+
+    <div class="card">
+
+        <h2>📦 Encrypted File → Photo</h2>
+
+        <input
+            type="file"
+            id="lockInput"
+            accept=".lock"
+        >
+
+        <input
+            type="password"
+            id="decryptPassword"
+            placeholder="Enter password"
+        >
+
+        <button onclick="decryptPhoto()">
+            🔓 Decrypt Photo
+        </button>
+
+        <div id="decryptStatus" class="status">
+            Select a .lock file
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const MAGIC = new TextEncoder().encode("PHOTOLOCK1");
+
+
+// =====================================================
+// PASSWORD → KEY
+// =====================================================
+
+async function createKey(password, salt){
+
+    const encoder = new TextEncoder();
+
+    const passwordData =
+        encoder.encode(password);
+
+    const baseKey =
+        await crypto.subtle.importKey(
+            "raw",
+            passwordData,
+            "PBKDF2",
+            false,
+            ["deriveKey"]
+        );
+
+    return crypto.subtle.deriveKey(
+        {
+            name:"PBKDF2",
+            salt:salt,
+            iterations:200000,
+            hash:"SHA-256"
+        },
+        baseKey,
+        {
+            name:"AES-GCM",
+            length:256
+        },
+        false,
+        ["encrypt","decrypt"]
+    );
+}
+
+
+// =====================================================
+// ENCRYPT PHOTO
+// =====================================================
+
+async function encryptPhoto(){
+
+    const input =
+        document.getElementById("photoInput");
+
+    const password =
+        document.getElementById("encryptPassword").value;
+
+    const status =
+        document.getElementById("encryptStatus");
+
+
+    if(!input.files.length){
+
+        status.innerHTML =
+            "❌ Please select a photo";
+
+        status.className =
+            "status error";
+
+        return;
+    }
+
+
+    if(!password){
+
+        status.innerHTML =
+            "❌ Please enter password";
+
+        status.className =
+            "status error";
+
+        return;
+    }
+
+
+    try{
+
+        status.innerHTML =
+            "⏳ Encrypting...";
+
+        const file =
+            input.files[0];
+
+        const data =
+            await file.arrayBuffer();
+
+
+        // Random salt
+        const salt =
+            crypto.getRandomValues(
+                new Uint8Array(16)
+            );
+
+
+        // Random IV
+        const iv =
+            crypto.getRandomValues(
+                new Uint8Array(12)
+            );
+
+
+        const key =
+            await createKey(
+                password,
+                salt
+            );
+
+
+        const encrypted =
+            await crypto.subtle.encrypt(
+                {
+                    name:"AES-GCM",
+                    iv:iv
+                },
+                key,
+                data
+            );
+
+
+        /*
+        File format:
+
+        MAGIC
+        SALT
+        IV
+        ENCRYPTED DATA
+        */
+
+        const result =
+            new Uint8Array(
+                MAGIC.length +
+                salt.length +
+                iv.length +
+                encrypted.byteLength
+            );
+
+
+        let offset = 0;
+
+
+        result.set(MAGIC,offset);
+        offset += MAGIC.length;
+
+
+        result.set(salt,offset);
+        offset += salt.length;
+
+
+        result.set(iv,offset);
+        offset += iv.length;
+
+
+        result.set(
+            new Uint8Array(encrypted),
+            offset
+        );
+
+
+        const blob =
+            new Blob(
+                [result],
+                {
+                    type:"application/octet-stream"
+                }
+            );
+
+
+        downloadFile(
+            blob,
+            file.name + ".lock"
+        );
+
+
+        status.innerHTML =
+            "✅ Encrypted file created";
+
+        status.className =
+            "status success";
+
+    }
+    catch(error){
+
+        console.error(error);
+
+        status.innerHTML =
+            "❌ Encryption failed";
+
+        status.className =
+            "status error";
+    }
+}
+
+
+// =====================================================
+// DECRYPT PHOTO
+// =====================================================
+
+async function decryptPhoto(){
+
+    const input =
+        document.getElementById("lockInput");
+
+    const password =
+        document.getElementById("decryptPassword").value;
+
+    const status =
+        document.getElementById("decryptStatus");
+
+
+    if(!input.files.length){
+
+        status.innerHTML =
+            "❌ Please select .lock file";
+
+        status.className =
+            "status error";
+
+        return;
+    }
+
+
+    if(!password){
+
+        status.innerHTML =
+            "❌ Please enter password";
+
+        status.className =
+            "status error";
+
+        return;
+    }
+
+
+    try{
+
+        status.innerHTML =
+            "⏳ Decrypting...";
+
+
+        const file =
+            input.files[0];
+
+        const data =
+            new Uint8Array(
+                await file.arrayBuffer()
+            );
+
+
+        let offset = 0;
+
+
+        // Check MAGIC
+
+        for(let i=0;i<MAGIC.length;i++){
+
+            if(data[offset+i] !== MAGIC[i]){
+
+                throw new Error(
+                    "Invalid encrypted file"
+                );
+            }
+        }
+
+
+        offset += MAGIC.length;
+
+
+        // Salt
+
+        const salt =
+            data.slice(
+                offset,
+                offset + 16
+            );
+
+        offset += 16;
+
+
+        // IV
+
+        const iv =
+            data.slice(
+                offset,
+                offset + 12
+            );
+
+        offset += 12;
+
+
+        // Encrypted data
+
+        const encrypted =
+            data.slice(offset);
+
+
+        const key =
+            await createKey(
+                password,
+                salt
+            );
+
+
+        const decrypted =
+            await crypto.subtle.decrypt(
+                {
+                    name:"AES-GCM",
+                    iv:iv
+                },
+                key,
+                encrypted
+            );
+
+
+        /*
+        Original filename:
+
+        photo.jpg.lock
+
+        becomes:
+
+        photo.jpg
+        */
+
+        let outputName =
+            file.name;
+
+        if(outputName.endsWith(".lock")){
+
+            outputName =
+                outputName.slice(
+                    0,
+                    -5
+                );
+        }
+        else{
+
+            outputName =
+                "decrypted-photo.jpg";
+        }
+
+
+        const blob =
+            new Blob(
+                [decrypted],
+                {
+                    type:"image/jpeg"
+                }
+            );
+
+
+        downloadFile(
+            blob,
+            outputName
+        );
+
+
+        status.innerHTML =
+            "✅ Original photo restored";
+
+        status.className =
+            "status success";
+
+    }
+    catch(error){
+
+        console.error(error);
+
+        status.innerHTML =
+            "❌ Wrong password or invalid file";
+
+        status.className =
+            "status error";
+    }
+}
+
+
+// =====================================================
+// DOWNLOAD
+// =====================================================
+
+function downloadFile(blob,name){
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const a =
+        document.createElement("a");
+
+    a.href = url;
+
+    a.download = name;
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+
+    setTimeout(
+        () => URL.revokeObjectURL(url),
+        1000
+    );
+}
+
+</script>
+
+</body>
+</html>

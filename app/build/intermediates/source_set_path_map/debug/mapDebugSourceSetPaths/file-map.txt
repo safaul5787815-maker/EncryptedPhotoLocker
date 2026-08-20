@@ -1,0 +1,7 @@
+com.safaul.encryptedphotolocker.app-pngs-0 /data/data/com.termux/files/home/Projects/EncryptedPhotoLocker/app/build/generated/res/pngs/debug
+com.safaul.encryptedphotolocker.app-resValues-1 /data/data/com.termux/files/home/Projects/EncryptedPhotoLocker/app/build/generated/res/resValues/debug
+com.safaul.encryptedphotolocker.app-packageDebugResources-2 /data/data/com.termux/files/home/Projects/EncryptedPhotoLocker/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
+com.safaul.encryptedphotolocker.app-packageDebugResources-3 /data/data/com.termux/files/home/Projects/EncryptedPhotoLocker/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
+com.safaul.encryptedphotolocker.app-debug-4 /data/data/com.termux/files/home/Projects/EncryptedPhotoLocker/app/build/intermediates/merged_res/debug/mergeDebugResources
+com.safaul.encryptedphotolocker.app-debug-5 /data/data/com.termux/files/home/Projects/EncryptedPhotoLocker/app/src/debug/res
+com.safaul.encryptedphotolocker.app-main-6 /data/data/com.termux/files/home/Projects/EncryptedPhotoLocker/app/src/main/res
