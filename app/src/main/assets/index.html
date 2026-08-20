@@ -506,13 +506,37 @@ async function decryptPhoto(){
         }
 
 
-        const blob =
-            new Blob(
-                [decrypted],
-                {
-                    type:"image/jpeg"
-                }
-            );
+let mimeType = "application/octet-stream";
+
+if (outputName.toLowerCase().endsWith(".jpg") ||
+    outputName.toLowerCase().endsWith(".jpeg")) {
+
+    mimeType = "image/jpeg";
+
+}
+else if (outputName.toLowerCase().endsWith(".png")) {
+
+    mimeType = "image/png";
+
+}
+else if (outputName.toLowerCase().endsWith(".webp")) {
+
+    mimeType = "image/webp";
+
+}
+else if (outputName.toLowerCase().endsWith(".gif")) {
+
+    mimeType = "image/gif";
+}
+
+
+const blob =
+    new Blob(
+        [decrypted],
+        {
+            type: mimeType
+        }
+    );
 
 
         downloadFile(
