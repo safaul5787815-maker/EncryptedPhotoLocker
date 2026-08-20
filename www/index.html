@@ -545,8 +545,40 @@ async function decryptPhoto(){
 // DOWNLOAD
 // =====================================================
 
-function downloadFile(blob,name){
+function downloadFile(blob, name){
 
+    // Android APK
+    if(window.Android){
+
+        const reader = new FileReader();
+
+        reader.onloadend = function(){
+
+            try{
+
+                const base64 =
+                    reader.result.split(",")[1];
+
+                window.Android.saveFile(
+                    base64,
+                    name
+                );
+
+            }catch(error){
+
+                alert(
+                    "Save failed: " +
+                    error.message
+                );
+            }
+        };
+
+        reader.readAsDataURL(blob);
+
+        return;
+    }
+
+    // Browser fallback
     const url =
         URL.createObjectURL(blob);
 
@@ -554,7 +586,6 @@ function downloadFile(blob,name){
         document.createElement("a");
 
     a.href = url;
-
     a.download = name;
 
     document.body.appendChild(a);
@@ -563,10 +594,7 @@ function downloadFile(blob,name){
 
     a.remove();
 
-    setTimeout(
-        () => URL.revokeObjectURL(url),
-        1000
-    );
+    URL.revokeObjectURL(url);
 }
 
 </script>
